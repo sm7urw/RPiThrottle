@@ -32,7 +32,7 @@ get_throttled_status() {
 
 # Funktion för att hämta CPU-temperaturen
 get_temperature() {
-    temperature=$(vcgencmd measure_temp | cut -d '=' -f 2 | tr -d ' ')
+    temperature=$(vcgencmd measure_temp | cut -d '=' -f 2 | tr -d "'" | tr -d ' ')
     echo "CPU Temperature: $temperature"
 }
 
