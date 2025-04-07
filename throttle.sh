@@ -3,11 +3,12 @@
 # Funktion för att hämta och tolka "throttled"-status
 get_throttled_status() {
     # Hämtar "throttled"-status med vcgencmd
-    throttled_hex=$(vcgencmd get_throttled | cut -d '=' -f 2 | xargs)
+    throttled_hex=$(vcgencmd get_throttled | cut -d '=' -f 2 | tr -d ' ')
 
     # Kontrollerar att vi har en giltig hexadecimal kod
-    if [[ $throttled_hex =~ ^[0-9a-fA-F]+$ ]]; then
-        throttled_dec=$((16#$throttled_hex))
+    if [[ $throttled_hex =~ ^0x[0-9a-fA-F]+$ ]]; then
+        # Tar bort prefixet "0x" och konverterar till decimaltal
+        throttled_dec=$((16#${throttled_hex#0x}))
     else
         echo "Invalid throttled status: $throttled_hex"
         return
@@ -31,13 +32,13 @@ get_throttled_status() {
 
 # Funktion för att hämta CPU-temperaturen
 get_temperature() {
-    temperature=$(vcgencmd measure_temp | cut -d '=' -f 2 | xargs)
+    temperature=$(vcgencmd measure_temp | cut -d '=' -f 2 | tr -d ' ')
     echo "CPU Temperature: $temperature"
 }
 
 # Funktion för att hämta kärnspänningen
 get_voltage() {
-    voltage=$(vcgencmd measure_volts | cut -d '=' -f 2 | xargs)
+    voltage=$(vcgencmd measure_volts | cut -d '=' -f 2 | tr -d ' ')
     echo "Core Voltage: $voltage"
 }
 
