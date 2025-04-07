@@ -1,62 +1,45 @@
-import subprocess
-def get_throttled_status():
-    try:
-        # Använder 'vcgencmd get_throttled' för att hämta en hexadecimal statuskod
-        # som anger orsakerna till att Raspberry Pi är "throttled".
-        result = subprocess.run(['vcgencmd', 'get_throttled'], capture_output=True, text=True)
-        # Extraherar den hexadecimala koden och konverterar den till ett heltal
-        throttled_status = int(result.stdout.split('=')[1].strip(), 16)
+#!/bin/bash
 
-        # Definierar betydelsen av varje bit i den hexadecimala statuskoden
-        throttled_reasons = {
-            0: "Under-voltage detected",  # Låg spänning upptäckt
-            1: "Arm frequency capped",    # ARM-frekvens begränsad
-            2: "Currently throttled",     # Aktuellt "throttled"
-            3: "Soft temperature limit active",  # Mjuk temperaturgräns aktiv
-            16: "Under-voltage has occurred",    # Låg spänning har inträffat
-            17: "Arm frequency capping has occurred",  # ARM-frekvensbegränsning har inträffat
-            18: "Throttling has occurred",       # "Throttling" har inträffat
-            19: "Soft temperature limit has occurred"  # Mjuk temperaturgräns har inträffat
-        }
+# Funktion för att hämta och tolka "throttled"-status
+get_throttled_status() {
+    # Hämtar "throttled"-status med vcgencmd
+    throttled_hex=$(vcgencmd get_throttled | cut -d '=' -f 2 | xargs)
+    throttled_dec=$((16#$throttled_hex))
 
-        # Kontrollerar vilka bitar som är satta i statuskoden
-        active_reasons = [reason for bit, reason in throttled_reasons.items() if throttled_status & (1 << bit)]
+    # Array med beskrivningar av varje bit i statusen
+    throttled_reasons=("Under-voltage detected" "Arm frequency capped" "Currently throttled" "Soft temperature limit active"
+                       "" "" "" "" "Under-voltage has occurred" "Arm frequency capping has occurred"
+                       "Throttling has occurred" "Soft temperature limit has occurred")
 
-        return active_reasons
+    # Kontrollerar vilka bitar som är satta och sparar beskrivningarna i en array
+    active_reasons=()
+    for ((i=0; i<${#throttled_reasons[@]}; i++)); do
+        if (( (throttled_dec >> i) & 1 )); then
+            active_reasons+=("${throttled_reasons[i]}")
+        fi
+    done
 
-    except Exception as e:
-        return [f"Error retrieving throttled status: {e}"]
+    echo "Throttled Reasons: ${active_reasons[@]}"
+}
 
-def get_temperature():
-    try:
-        # Använder 'vcgencmd measure_temp' för att hämta CPU-temperaturen
-        result = subprocess.run(['vcgencmd', 'measure_temp'], capture_output=True, text=True)
-        temperature = result.stdout.split('=')[1].strip()
-        return temperature
-    except Exception as e:
-        return f"Error retrieving temperature: {e}"
+# Funktion för att hämta CPU-temperaturen
+get_temperature() {
+    temperature=$(vcgencmd measure_temp | cut -d '=' -f 2 | xargs)
+    echo "CPU Temperature: $temperature"
+}
 
-def get_voltage():
-    try:
-        # Använder 'vcgencmd measure_volts' för att hämta kärnspänningen
-        result = subprocess.run(['vcgencmd', 'measure_volts'], capture_output=True, text=True)
-        voltage = result.stdout.split('=')[1].strip()
-        return voltage
-    except Exception as e:
-        return f"Error retrieving voltage: {e}"
+# Funktion för att hämta kärnspänningen
+get_voltage() {
+    voltage=$(vcgencmd measure_volts | cut -d '=' -f 2 | xargs)
+    echo "Core Voltage: $voltage"
+}
 
-def main():
-    # Hämtar och skriver ut orsakerna till att Raspberry Pi är "throttled"
-    throttled_reasons = get_throttled_status()
-    print("Throttled Reasons:", throttled_reasons)
+# Huvudfunktion som kör de andra funktionerna
+main() {
+    get_throttled_status
+    get_temperature
+    get_voltage
+}
 
-    # Hämtar och skriver ut CPU-temperaturen
-    temperature = get_temperature()
-    print("CPU Temperature:", temperature)
-
-    # Hämtar och skriver ut kärnspänningen
-    voltage = get_voltage()
-    print("Core Voltage:", voltage)
-
-if __name__ == "__main__":
-    main()
+# Kör huvudfunktionen
+main
