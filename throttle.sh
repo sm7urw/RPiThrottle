@@ -4,7 +4,14 @@
 get_throttled_status() {
     # Hämtar "throttled"-status med vcgencmd
     throttled_hex=$(vcgencmd get_throttled | cut -d '=' -f 2 | xargs)
-    throttled_dec=$((16#$throttled_hex))
+
+    # Kontrollerar att vi har en giltig hexadecimal kod
+    if [[ $throttled_hex =~ ^[0-9a-fA-F]+$ ]]; then
+        throttled_dec=$((16#$throttled_hex))
+    else
+        echo "Invalid throttled status: $throttled_hex"
+        return
+    fi
 
     # Array med beskrivningar av varje bit i statusen
     throttled_reasons=("Under-voltage detected" "Arm frequency capped" "Currently throttled" "Soft temperature limit active"
